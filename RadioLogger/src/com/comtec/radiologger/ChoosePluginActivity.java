@@ -1,4 +1,4 @@
-package com.comtec.radiologger.main;
+package com.comtec.radiologger;
 
 import java.util.ArrayList;
 import java.util.HashMap;

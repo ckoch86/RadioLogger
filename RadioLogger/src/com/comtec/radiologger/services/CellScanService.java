@@ -176,8 +176,6 @@ public class CellScanService extends Service {
 		public void onDataConnectionStateChanged(int state, int networkType) {
 			super.onDataConnectionStateChanged(state, networkType);
 
-			Log.d("CellScannService", state + " " + networkType);
-
 			CellScanService.networkType = getNetworkType(networkType);
 		}
 

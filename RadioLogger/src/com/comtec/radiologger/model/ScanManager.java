@@ -97,8 +97,6 @@ public class ScanManager extends PhoneStateListener {
 	private Intent cellScanService;
 	private Intent netStatInfoService;
 	
-	private static ScanModes scanMode;
-
 	// default refresh time (5sec)
 	private long refreshTime = 5000;
 
@@ -124,10 +122,9 @@ public class ScanManager extends PhoneStateListener {
 	 * This method starts cell scanning
 	 * @param labelName 
 	 */
-	public void startCellScan(ScanModes scanMode, long refreshTime, String labelName) {
+	public void startCellScan(long refreshTime, String labelName) {
 		this.refreshTime = refreshTime;
 		ScanManager.selectedLocation = labelName;
-		ScanManager.scanMode = scanMode;
 
 		scannedCells.clear();
 

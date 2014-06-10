@@ -2,22 +2,22 @@ package com.comtec.radiologger.adapter;
 
 import java.util.Locale;
 
+import android.app.Fragment;
+import android.app.FragmentManager;
 import android.content.Context;
 import android.os.Bundle;
-import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentPagerAdapter;
+import android.support.v13.app.FragmentPagerAdapter;
 
 import com.comtec.radiologger.R;
 import com.comtec.radiologger.fragments.ScanFragment;
 import com.comtec.radiologger.fragments.ValidationFragment;
 
-public class FragmentAdapter extends FragmentPagerAdapter {
+public class SectionPagerAdapter extends FragmentPagerAdapter {
 	
 	private Context context;
 
-	public FragmentAdapter(FragmentManager fm, Context context) {
-		super(fm);
+	public SectionPagerAdapter(FragmentManager fragmentManager, Context context) {
+		super(fragmentManager);
 		
 		this.context = context;
 	}

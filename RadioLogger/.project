@@ -3,7 +3,6 @@
 	<name>RadioLogger</name>
 	<comment></comment>
 	<projects>
-		<project>RadioLoggerLib</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>

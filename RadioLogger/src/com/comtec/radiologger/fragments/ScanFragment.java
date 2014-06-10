@@ -3,6 +3,7 @@ package com.comtec.radiologger.fragments;
 import java.util.ArrayList;
 
 import android.app.Activity;
+import android.app.Fragment;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -15,16 +16,15 @@ import android.widget.SeekBar;
 import android.widget.SeekBar.OnSeekBarChangeListener;
 import android.widget.TextView;
 
-import com.actionbarsherlock.app.SherlockFragment;
+import com.comtec.radiologger.MainActivity;
 import com.comtec.radiologger.R;
 import com.comtec.radiologger.adapter.GridViewAdapter;
 import com.comtec.radiologger.interfaces.ActivityCommunicationInterface;
 import com.comtec.radiologger.interfaces.ScanFragmentInterface;
-import com.comtec.radiologger.main.MainActivity;
 import com.comtec.radiologger.model.MessageTypes;
 import com.comtec.radiologger.model.ScannedCell;
 
-public class ScanFragment extends SherlockFragment implements ScanFragmentInterface {
+public class ScanFragment extends Fragment implements ScanFragmentInterface {
 
 	public static final String ARG_SECTION_NUMBER = "section_number";
 
@@ -51,13 +51,11 @@ public class ScanFragment extends SherlockFragment implements ScanFragmentInterf
 	private ActivityCommunicationInterface mActivityCommunicator;
 
 	private String default_location;
-	private String default_configfile;
-	private String remove_tag;
 	private String selectedLocation;
 
 	@Override
 	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-		v = inflater.inflate(R.layout.fragment_manualscan, container, false);
+		v = inflater.inflate(R.layout.fragment_scan, container, false);
 		init();
 		return v;
 	}
@@ -96,6 +94,8 @@ public class ScanFragment extends SherlockFragment implements ScanFragmentInterf
 			}
 		});
 
+		selectedLocation = default_location;
+		
 		txtCellID = (TextView) v.findViewById(R.id.txtCellID);
 		txtConfig = (TextView) v.findViewById(R.id.txtConfig);
 		txtLocation = (TextView) v.findViewById(R.id.txtLocation);
@@ -104,14 +104,6 @@ public class ScanFragment extends SherlockFragment implements ScanFragmentInterf
 		txtOperator = (TextView) v.findViewById(R.id.txtOperator);
 		txtRefreshTime = (TextView) v.findViewById(R.id.txtSeekbar);
 		txtRSSI = (TextView) v.findViewById(R.id.txtSignalStrength);
-		txtConfig.setText(default_configfile);
-		txtLocation.setText(default_location);
-		txtConfig.setText(default_configfile);
-		
-		default_configfile = getString(R.string.txt_default_configfile);
-		default_location = getString(R.string.txt_default_location);
-		remove_tag = getString(R.string.txt_remove_tag);
-		selectedLocation = default_location;
 		
 		initButtons(defaultButtons);
 	}
@@ -132,16 +124,15 @@ public class ScanFragment extends SherlockFragment implements ScanFragmentInterf
 
 				@Override
 				public void onClick(View v) {
-					Button btnSelected = (Button) v;
-
-					selectedLocation = (String) btnSelected.getText();
-
-					if (selectedLocation.equals(remove_tag)) {
-						selectedLocation = default_location;
+					if (isScanning) {
+						Button btnSelected = (Button) v;
+						selectedLocation = (String) btnSelected.getText();
+						if (selectedLocation.equals(getString(R.string.txt_remove_tag))) {
+							selectedLocation = default_location;
+						}
+						txtLocation.setText(selectedLocation);
+						mActivityCommunicator.updateSelectedLocation(selectedLocation);
 					}
-
-					txtLocation.setText(selectedLocation);
-//					mActivityCommunicator.messageFromFragment(MessageTypes.LOCATION_NAME, selectedLocation);
 				}
 			});
 			locationBtn.setId(i);
@@ -188,9 +179,13 @@ public class ScanFragment extends SherlockFragment implements ScanFragmentInterf
 			}
 		} if (messageType.equals(MessageTypes.NETWORKTYPE)) {
 			txtNetwork.setText(message);
-		}  if (messageType.equals(MessageTypes.CELLID)) {
+		} if (messageType.equals(MessageTypes.CELLID)) {
 			txtCellID.setText(message);
-		} 
+		}  if (messageType.equals(MessageTypes.START_SCAN)) {
+			isScanning = true;
+		} if (messageType.equals(MessageTypes.STOP_SCAN)) {
+			isScanning = false;
+		}
 	}
 
 	@Override

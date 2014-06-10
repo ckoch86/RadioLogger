@@ -3,9 +3,9 @@ package com.comtec.radiologger.fragments;
 import java.util.ArrayList;
 
 import android.app.Activity;
+import android.app.Fragment;
 import android.graphics.Color;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -14,16 +14,15 @@ import android.widget.Button;
 import android.widget.GridView;
 import android.widget.TextView;
 
-import com.actionbarsherlock.app.SherlockFragment;
+import com.comtec.radiologger.MainActivity;
 import com.comtec.radiologger.R;
 import com.comtec.radiologger.adapter.GridViewAdapter;
 import com.comtec.radiologger.interfaces.ActivityCommunicationInterface;
 import com.comtec.radiologger.interfaces.ValidationFragmentInterface;
-import com.comtec.radiologger.main.MainActivity;
 import com.comtec.radiologger.model.MessageTypes;
 import com.comtec.radiologger.model.ScannedCell;
 
-public class ValidationFragment extends SherlockFragment implements ValidationFragmentInterface {
+public class ValidationFragment extends Fragment implements ValidationFragmentInterface {
 	
 	public static final String ARG_SECTION_NUMBER = "section_number";
 	
@@ -34,13 +33,14 @@ public class ValidationFragment extends SherlockFragment implements ValidationFr
 	private TextView txtCellID;
 	private TextView txtRSSI;
 	private TextView txtNeighbours;
+	private TextView txtSelectedConfig;
+	private TextView txtSelectedPlugin;
 	private TextView txtDetectedLocation;
 	private TextView txtCorrectedLocation;
 	private GridView gvLocations;
-	
-//	private ArrayList<ScannedCell> dbCells;
-	private ArrayList<ScannedCell> scannedNeighbours;
+
 	private ArrayList<Button> mButtons;
+	private Button selectedButton;
 	
 	private String currentCellID;
 	private int currentRSSI;
@@ -60,6 +60,8 @@ public class ValidationFragment extends SherlockFragment implements ValidationFr
 		txtCellID = (TextView) v.findViewById(R.id.txtCellID);
 		txtRSSI = (TextView) v.findViewById(R.id.txtSignalStrength);
 		txtNeighbours = (TextView) v.findViewById(R.id.txtNeighbourDetails);
+		txtSelectedConfig = (TextView) v.findViewById(R.id.tv_selected_config);
+		txtSelectedPlugin = (TextView) v.findViewById(R.id.tv_selected_plugin);
 		txtDetectedLocation = (TextView) v.findViewById(R.id.txtDetectedLocation);
 		txtCorrectedLocation = (TextView) v.findViewById(R.id.txtCorrectedLocation);
 
@@ -96,73 +98,25 @@ public class ValidationFragment extends SherlockFragment implements ValidationFr
 				
 				@Override
 				public void onClick(View v) {
-					Button btnSelected = (Button) v;
-					
-					
-					String newLocation = (String) btnSelected.getText();
-					txtCorrectedLocation.setText(newLocation);
-					
-					if (detectedCell != null) {
-						detectedCell.setLocation(newLocation);
-					} else {
-						detectedCell = new ScannedCell(String.valueOf(System.currentTimeMillis()), newLocation, currentCellID, currentRSSI);
+					if (isScanning) {
+						Button btnSelected = (Button) v;
+						String newLocation = (String) btnSelected.getText();
+						txtCorrectedLocation.setText(newLocation);
+						if (detectedCell != null) {
+							detectedCell.setLocation(newLocation);
+						} else {
+							detectedCell = new ScannedCell(String.valueOf(System.currentTimeMillis()), newLocation, currentCellID, currentRSSI);
+						}
+						btnSelected.setBackgroundResource(R.drawable.button_green);
+						selectedButton.setBackgroundResource(R.drawable.button_blue);
+						mActivityCommunicator.updateCorrectedLocation(newLocation);
 					}
-					
-//					mActivityCommunicator.messageFromFragment(MessageTypes.CELL_CORRECTION, detectedCell);
-//					mActivityCommunicator.messageFromFragment(MessageTypes.LOCATIONCHANGE, newLocation);
 				}
 			});
 		}
 
 		gvLocations = (GridView) v.findViewById(R.id.gvButtons);
 		gvLocations.setAdapter(new GridViewAdapter(mButtons));
-	}
-	
-	private void checkLocation() {
-//		txtDetectedLocation.setText(getString(R.string.txt_newlocation));
-//		
-//		if (dbCells != null) {
-//			
-//			for (ScannedCell cell : dbCells) {
-//
-//				int countCells = 0;
-//				if (cell.getCellID().equals(currentCellID) && mButtons != null) {
-//					
-//					// Ueberpruefung ob die Zellen aus der Datenbank bei den jetzt erneut gescannten
-//					// Zellen vorkommen.
-//					// Gibt es einen Treffer, wird der Empfang ueberprueft
-//					for (ScannedCell dbNeighbourCell : cell.getNeighbours()) {
-//						for (ScannedCell scannedNeighbourCell : scannedNeighbours) {
-//							if (dbNeighbourCell.getCellID().equals(scannedNeighbourCell.getCellID())) {
-//								int difference = dbNeighbourCell.getRSSI() + scannedNeighbourCell.getRSSI();
-//								if (difference < 3 && difference > -3) {
-//									countCells++;
-//								}
-//							}
-//						}
-//					}
-//					
-//					if (countCells == cell.getNeighbours().size()) {
-//						Button btnDetectedLocation = null;
-//						for (Button btn : mButtons) {
-//							
-//							if (btn.getText().toString().equals(cell.getLocationName())) {
-//								
-//								if (btnDetectedLocation != null) {
-//									btnDetectedLocation.setBackgroundResource(R.drawable.button_blue);
-//								}
-//								txtDetectedLocation.setText(cell.getLocationName());
-//								mActivityCommunicator.messageFromFragment(MessageTypes.CELL_DETECTED, cell.getLocationName());
-//								btn.setBackgroundResource(R.drawable.button_green);
-//								btnDetectedLocation = btn;
-//
-//								detectedCell = cell;
-//							}
-//						}
-//					}
-//				}
-//			}
-//		}
 	}
 	
 	private void resetButtons() {
@@ -185,10 +139,6 @@ public class ValidationFragment extends SherlockFragment implements ValidationFr
 		}
 	}
 	
-	private void showInfoLog(String message) {
-		Log.i(this.getClass().getSimpleName(), message);
-	}
-
 	@Override
 	public void messageFromActivity(MessageTypes messageType, String message) {
 		if (messageType.equals(MessageTypes.OPERATOR)) {
@@ -199,22 +149,26 @@ public class ValidationFragment extends SherlockFragment implements ValidationFr
 		} if (messageType.equals(MessageTypes.LOCATION_NAMES)) {
 			initButtons(message);
 		} if (messageType.equals(MessageTypes.CONFIGFILE)) {
-			
+			txtSelectedConfig.setText(message);
+		} if (messageType.equals(MessageTypes.PLUGINS)) {
+			txtSelectedPlugin.setText(message);
 		} if (messageType.equals(MessageTypes.REFRESH_TIME)) {
 			
 		} if (messageType.equals(MessageTypes.NETWORKTYPE)) {
 			txtNetwork.setText(message);
-		}  if (messageType.equals(MessageTypes.CELLID)) {
+		} if (messageType.equals(MessageTypes.CELLID)) {
 			txtCellID.setText(message);
 			this.currentCellID = message;
-			checkLocation();
-		} 
+		} if (messageType.equals(MessageTypes.START_SCAN)) {
+			isScanning = true;
+		} if (messageType.equals(MessageTypes.STOP_SCAN)) {
+			isScanning = false;
+		}
 	}
 
 	@Override
 	public void messageFromActivity(MessageTypes messageType, ArrayList<ScannedCell> scannedNeighbours) {
 		if (!messageType.equals(MessageTypes.QUERY_DBCELLS)) {
-			this.scannedNeighbours = scannedNeighbours;
 			String neighboursOutput = "";
 			if (scannedNeighbours == null) {
 				txtNeighbours.setText(getString(R.string.txt_no_neighbours));
@@ -239,7 +193,9 @@ public class ValidationFragment extends SherlockFragment implements ValidationFr
 	public void sendDetectedLocation(String detectedLocation) {
 		for (Button btn : mButtons) {
 			if (btn.getText().toString().equals(detectedLocation)) {
+				selectedButton = btn;
 				btn.setBackgroundResource(R.drawable.button_green);
+				txtDetectedLocation.setText(btn.getText());
 			}
 		}
 	}

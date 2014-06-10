@@ -137,8 +137,22 @@ public class FileManager {
 		Toast.makeText(context, message, time).show();
 	}
 
+	/*
+	 * Format:
+	 * timestamp:detectedLocation:correctedLocation:currentCellID,currentCellRSSI:neighbourCellID,neighbourCellRSSI:neighbourCellID, ...
+	 */
 	public void buildLogFile(String timestamp, String labelName, String cellID, int rssi, ArrayList<ScannedCell> scannedCells) {
 		logData += timestamp + ":" + labelName +  ":" + cellID + "," + rssi;
+		if (scannedCells.size() > 0) {
+			logData += ":";
+			for (ScannedCell scannedCell : scannedCells) {
+				logData += scannedCell.getRSSI() + "," + scannedCell.getRSSI();
+			}
+		}
+		logData += "\n";
+	}
+	public void buildLogFile(String timestamp, String labelName, String correctedLabel, String cellID, int rssi, ArrayList<ScannedCell> scannedCells) {
+		logData += timestamp + ":" + labelName + ":" + correctedLabel + ":" + cellID + "," + rssi;
 		if (scannedCells.size() > 0) {
 			logData += ":";
 			for (ScannedCell scannedCell : scannedCells) {

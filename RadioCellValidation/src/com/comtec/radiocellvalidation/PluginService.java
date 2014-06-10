@@ -1,4 +1,4 @@
-package com.comtec.radiocellvalidation.main;
+package com.comtec.radiocellvalidation;
 
 import java.util.ArrayList;
 
@@ -17,7 +17,7 @@ public class PluginService extends Service {
 	static final String CATEGORY_ADD_IF = "RadioCellValidation";
 	static final int RSSI_TOLLERANCE = 3;
 	
-	private DatabaseHandler mDBHandler = new DatabaseHandler(getApplicationContext());
+	private DatabaseHandler mDBHandler;
 	
 	private final IBinaryOp.Stub addBinder = new IBinaryOp.Stub() {
 
@@ -51,37 +51,43 @@ public class PluginService extends Service {
 		}
 
 		@Override
-		public String checkCell(Bundle b) throws RemoteException {
-			ScannedCell cell = new ScannedCell();
-			cell.setCellID(b.getString("cellid"));
-			cell.setRSSI(b.getInt("rssi"));
-			b.remove("cellid");
-			b.remove("rssi");
-			for (int i = 0; i < b.size(); i++) {
-				ScannedCell neighbourCell = new ScannedCell();
-				neighbourCell.setCellID(b.getString("cellid" + i));
-				neighbourCell.setRSSI(b.getInt("rssi" + i));
-			}
+		public String validateCell(Bundle b) throws RemoteException {
+			ScannedCell currentCell = new ScannedCell();
+			currentCell.setCellID(b.getString("cellid"));
+			currentCell.setRSSI(b.getInt("rssi"));
 			
-			for (ScannedCell dbCell : mDBHandler.getLocations()) {
-				if (dbCell.getCellID().equals(cell.getCellID())) {
-					int countNeighbours = 0;
-					for (ScannedCell dbNeighbourCell : dbCell.getNeighbours()) {
-						for (ScannedCell neighbourCell : cell.getNeighbours()) {
-							if (dbNeighbourCell.getCellID().equals(neighbourCell.getCellID())) {
-								int difference = dbNeighbourCell.getRSSI() + neighbourCell.getRSSI();
-								if (difference < RSSI_TOLLERANCE && difference > -RSSI_TOLLERANCE) {
-									countNeighbours++;
-								}
-							}
-						}
-					}
-					if (countNeighbours == cell.getNeighbours().size()) {
-						return dbCell.getLocationName();
-					}
+			if (b.size() > 2) {
+				int neighbourPos = 0;
+				for (int i = 2; i < b.size(); i++) {
+					ScannedCell neighbourCell = new ScannedCell();
+					neighbourCell.setCellID(b.getString("cellid" + neighbourPos));
+					neighbourCell.setRSSI(b.getInt("rssi" + neighbourPos));
+					neighbourPos++;
 				}
 			}
 			
+			ArrayList<ScannedCell> dbCells = mDBHandler.getLocations();
+			
+			if (dbCells != null) {
+				for (ScannedCell cell : dbCells) {
+					if (cell.getCellID().equals(currentCell.getCellID())) {
+						int countNeighbours = 0;
+						for (ScannedCell dbNeighbourCell : currentCell.getNeighbours()) {
+							for (ScannedCell neighbourCell : currentCell.getNeighbours()) {
+								if (dbNeighbourCell.getCellID().equals(neighbourCell.getCellID())) {
+									int difference = dbNeighbourCell.getRSSI() + neighbourCell.getRSSI();
+									if (difference < RSSI_TOLLERANCE && difference > -RSSI_TOLLERANCE) {
+										countNeighbours++;
+									}
+								}
+							}
+						}
+						if (countNeighbours == currentCell.getNeighbours().size()) {
+							return cell.getLocationName();
+						}
+					}
+				}
+			}
 			return "";
 		}
 	};
@@ -93,6 +99,7 @@ public class PluginService extends Service {
 	
 	@Override
 	public IBinder onBind(Intent intent) {
+		mDBHandler = new DatabaseHandler(getApplicationContext());
 		return addBinder;
 	}
 }

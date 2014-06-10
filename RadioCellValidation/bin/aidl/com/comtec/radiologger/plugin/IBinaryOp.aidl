@@ -4,5 +4,5 @@ interface IBinaryOp {
 	boolean clearDatabase();
 	void saveCell(String timestamp, String labelname, String cellID, int rssi);
 	Bundle getScannedCells();
-	String checkCell(in Bundle b);
+	String validateCell(in Bundle b);
 }

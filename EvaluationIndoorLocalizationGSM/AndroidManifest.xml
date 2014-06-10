@@ -6,22 +6,22 @@
 
     <uses-sdk
         android:minSdkVersion="10"
-        android:targetSdkVersion="18" />
+        android:targetSdkVersion="19" />
 
     <application
         android:allowBackup="true"
         android:icon="@drawable/ic_launcher"
         android:label="@string/app_name"
         android:theme="@style/AppTheme" >
-        <activity
-            android:name="com.example.evaluationindoorlocalizationgsm.MainActivity"
-            android:label="@string/app_name" >
+        <service
+            android:name="PluginService"
+            android:exported="true" >
             <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
+                <action android:name="comtec.intent.action.PICK_PLUGIN" />
 
-                <category android:name="android.intent.category.LAUNCHER" />
+                <category android:name="EvaluationIndoorLocalizationGSM" />
             </intent-filter>
-        </activity>
+        </service>
     </application>
 
 </manifest>

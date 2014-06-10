@@ -1,8 +1,10 @@
-package com.comtec.radiologger.main;
+package com.comtec.radiologger;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 
+import android.app.ActionBar;
+import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -11,7 +13,8 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
-import android.os.Build;
+import android.os.Build.VERSION;
+import android.os.Build.VERSION_CODES;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.IBinder;
@@ -20,17 +23,15 @@ import android.support.v4.app.NotificationCompat;
 import android.support.v4.view.ViewPager;
 import android.util.Log;
 import android.view.KeyEvent;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.ViewConfiguration;
 import android.view.WindowManager;
 import android.widget.Toast;
 
-import com.actionbarsherlock.app.ActionBar;
-import com.actionbarsherlock.app.SherlockFragmentActivity;
-import com.actionbarsherlock.view.Menu;
-import com.actionbarsherlock.view.MenuInflater;
-import com.actionbarsherlock.view.MenuItem;
 import com.comtec.radiologger.R;
-import com.comtec.radiologger.adapter.FragmentAdapter;
+import com.comtec.radiologger.adapter.SectionPagerAdapter;
 import com.comtec.radiologger.interfaces.ActivityCommunicationInterface;
 import com.comtec.radiologger.interfaces.NetworkInfoInterface;
 import com.comtec.radiologger.interfaces.ScanFragmentInterface;
@@ -42,16 +43,16 @@ import com.comtec.radiologger.model.ScanModes;
 import com.comtec.radiologger.model.ScannedCell;
 import com.comtec.radiologger.plugin.IBinaryOp;
 
-public class MainActivity extends SherlockFragmentActivity implements ActivityCommunicationInterface, NetworkInfoInterface {
+public class MainActivity extends Activity implements ActivityCommunicationInterface, NetworkInfoInterface {
 
-	public static final int DEVICE_VERSION = Build.VERSION.SDK_INT;
-	public static final int DEVICE_HONEYCOMB = Build.VERSION_CODES.HONEYCOMB;
+	public static final int DEVICE_VERSION = VERSION.SDK_INT;
+	public static final int DEVICE_HONEYCOMB = VERSION_CODES.HONEYCOMB;
 
 	/**
 	 * ActionBar
 	 */
 	private ActionBar actionBar;
-	private FragmentAdapter mSectionsPagerAdapter;
+	private SectionPagerAdapter mSectionsPagerAdapter;
 	private ViewPager mViewPager;
 	public ScanFragmentInterface scanFragmentInterface;
 	public ValidationFragmentInterface validationFragmentInterface;
@@ -95,7 +96,7 @@ public class MainActivity extends SherlockFragmentActivity implements ActivityCo
 	private ScanManager mCellScanManager;
 	private String cellID;
 	private String labelName;
-	private String validationLabel;
+	private String correctedLabel;
 	private String networkType;
 	private String operator;
 	private int rssi;
@@ -113,12 +114,9 @@ public class MainActivity extends SherlockFragmentActivity implements ActivityCo
 	 * validationview
 	 */
 	private ScanModes scanMode = ScanModes.MANUAL;
-	private String validation_newlocation;
 	private int refreshTime;
 	private boolean pluginServiceBound = false;
 	private boolean configFileSelected = false;
-	
-//	ScanFragment scanFragment = (ScanFragment) getFragmentManager().findFragmentById(R.id.);
 	
 	/**
 	 * Plugins
@@ -127,7 +125,8 @@ public class MainActivity extends SherlockFragmentActivity implements ActivityCo
 	private String pluginCategory;
 	private OpServiceConnection opServiceConnection;
 	private IBinaryOp opService;
-
+	private String pluginWarning = "";
+	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -137,11 +136,10 @@ public class MainActivity extends SherlockFragmentActivity implements ActivityCo
 		getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 		
 		//Init ActionBar
-		actionBar = getSupportActionBar();
+		actionBar = getActionBar();
 		actionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_STANDARD);
 
-		mSectionsPagerAdapter = new FragmentAdapter(
-				getSupportFragmentManager(), this);
+		mSectionsPagerAdapter = new SectionPagerAdapter(getFragmentManager(), this);
 
 		mViewPager = (ViewPager) findViewById(R.id.pager);
 		mViewPager.setAdapter(mSectionsPagerAdapter);
@@ -165,8 +163,8 @@ public class MainActivity extends SherlockFragmentActivity implements ActivityCo
 
 		// settings default values
 		db_info = getString(R.string.txt_database_info);
-		default_configfile = getString(R.string.txt_default_configfile);
-		default_location = getString(R.string.txt_default_location);
+		default_configfile = getString(R.string.txt_no_configfile);
+		default_location = getString(R.string.txt_not_assigned);
 		exit_info = getString(R.string.txt_exit_info);
 		scan_info = getString(R.string.txt_scan_info);
 		sdcard_error = getString(R.string.txt_sdcard_error);
@@ -188,8 +186,13 @@ public class MainActivity extends SherlockFragmentActivity implements ActivityCo
 				sendToFragments(MessageTypes.LOCATION_NAMES, locationNames);
 			}
 			if (data.getExtras().containsKey(MessageTypes.CONFIGFILE.toString())) {
-
 				configFileSelected = true;
+				if (scanMode.equals(ScanModes.AUTO)) {
+					if (!pluginServiceBound) {
+						Intent intent = new Intent(getApplicationContext(), ChoosePluginActivity.class);
+						startActivityForResult(intent, 1);
+					}
+				}
 				configFile = data.getStringExtra(MessageTypes.CONFIGFILE.toString());
 				refreshTime = data.getIntExtra(MessageTypes.REFRESH_TIME.toString(), 0);
 				labelName = default_location;
@@ -201,7 +204,7 @@ public class MainActivity extends SherlockFragmentActivity implements ActivityCo
 				if (playButtonPressed && scanMode.equals(ScanModes.MANUAL)) {
 					showNotification();
 					if (mCellScanManager != null) {
-						mCellScanManager.startCellScan(scanMode, refreshTime, labelName);
+						mCellScanManager.startCellScan(refreshTime, labelName);
 					}
 					isScanning = true;
 					iconScanState.setIcon(android.R.drawable.ic_media_pause);
@@ -222,16 +225,29 @@ public class MainActivity extends SherlockFragmentActivity implements ActivityCo
 				mNotifyManager.cancel(NOTIFY_ID);
 			}
 			if ((data.getExtras().containsKey(MessageTypes.PLUGINS.toString()))) {
-				if (playButtonPressed) {
-					showNotification();
-					if (mCellScanManager != null) {
-						mCellScanManager.startCellScan(scanMode, refreshTime, labelName);
+				if (!configFileSelected) {
+					Intent intent = new Intent(getApplicationContext(), ChooseConfigActivity.class);
+					startActivityForResult(intent, 1);
+				} else {
+					if (playButtonPressed) {
+						showNotification();
+						if (mCellScanManager != null) {
+							mCellScanManager.startCellScan(refreshTime, labelName);
+						}
+						isScanning = true;
+						iconScanState.setIcon(android.R.drawable.ic_media_pause);
 					}
-					isScanning = true;
-					iconScanState.setIcon(android.R.drawable.ic_media_pause);
+					
+					pluginCategory = data.getStringExtra(MessageTypes.PLUGINS.toString());
+
+					if (!pluginServiceBound) {
+						bindOpService();
+					} else {
+						pluginWarning = "A plugin is already bound. Do you want to unbind the " + pluginCategory + "-Plugin and bind " + data.getStringExtra(MessageTypes.PLUGINS.toString()) + "-Plugin instead?";
+						showDialog(pluginWarning);
+					}
+					sendToFragments(MessageTypes.PLUGINS, pluginCategory);
 				}
-				pluginCategory = data.getStringExtra(MessageTypes.PLUGINS.toString());
-		        bindOpService();
 			}
 		}
 	}
@@ -258,13 +274,10 @@ public class MainActivity extends SherlockFragmentActivity implements ActivityCo
 				.setMessage(message)
 				.setPositiveButton(android.R.string.ok,
 						new DialogInterface.OnClickListener() {
-							public void onClick(DialogInterface dialog,
-									int which) {
+							public void onClick(DialogInterface dialog, int which) {
 								if (message.equals(db_info)) {
-									
 									if (isScanning) {
 										showInfoMessage(scan_info, Toast.LENGTH_LONG);
-									
 									} else {
 										if (pluginServiceBound) {
 											try {
@@ -277,14 +290,14 @@ public class MainActivity extends SherlockFragmentActivity implements ActivityCo
 										}
 										showInfoMessage("Database cleared", Toast.LENGTH_SHORT);
 									}
-									
 								} else if (message.equals(exit_info)) {
-									
 									if (isScanning) {
 										stopScanning();
 									}
-									
 									finish();
+								} else if (message.equals(pluginWarning)) {
+									releaseOpService();
+									bindOpService();
 								}
 							}
 						})
@@ -341,6 +354,7 @@ public class MainActivity extends SherlockFragmentActivity implements ActivityCo
 			
 			mCellScanManager.stopCellScan();
 			isScanning = false;
+			playButtonPressed = false;
 			iconScanState.setIcon(android.R.drawable.ic_media_play);
 			mNotifyManager.cancel(NOTIFY_ID);
 		}
@@ -391,117 +405,10 @@ public class MainActivity extends SherlockFragmentActivity implements ActivityCo
 			}
 		}
 	}
-	
-//	/**
-//	 * Receiving messages from fragments
-//	 */
-//	@Override
-//	public void messageFromFragment(MessageTypes messageType, String message) {
-//		switch (messageType) {
-//		case START_SCAN:
-//			showNotification();
-//			if (mCellScanManager != null) {
-//				mCellScanManager.startCellScan(scanMode, refreshTime, labelName);
-//			}
-//			isScanning = true;
-//			getSupportActionBar().hide();
-//			break;
-//		case STOP_SCAN:
-//			if (mCellScanManager != null) {
-//				mCellScanManager.stopCellScan();
-//			}
-//			isScanning = false;
-//			
-//			if (!configFile.equals(default_configfile)) {
-//				mFileManager.saveLogData(networkType, operator, configFile);
-//			} else {
-//				showInfoMessage(getString(R.string.txt_infomsg_saveerror), Toast.LENGTH_SHORT);
-//			}
-//			if (mNotifyManager != null) {
-//				mNotifyManager.cancel(NOTIFY_ID);
-//			}
-//			
-//			break;
-//		case LOCATION_NAME:
-//			labelName = message;
-//			mCellScanManager.setLocationName(labelName);
-//			break;
-//		case FRAGMENT_READY:
-//			if (mViewPager != null) {
-//				if (mViewPager.getChildCount() == 1) {
-//					mCellScanManager = new ScanManager(this,
-//							getApplicationContext());
-//				}
-//			}
-//			break;
-//		case SCAN_ACTIVE:
-//			if (scanFragmentActive) {
-//				validation_newlocation = labelName;
-//				scanFragmentActive = false;
-//				scanMode = ScanModes.AUTO;
-//				if (isScanning) {
-//					stopScanning();
-//				}
-//			} else {
-//				scanFragmentActive = true;
-//				scanMode = ScanModes.MANUAL;
-//			}
-//			break;
-//		case REFRESH_TIME:
-//			this.refreshTime = Integer.parseInt(message);
-//			mCellScanManager.setRefreshTime(refreshTime);
-//			break;
-//		case LOCATIONCHANGE:
-//			validation_newlocation = message;
-//			break;
-//		case CELL_DETECTED:
-//			validationLabel = message;
-//			break;
-//		case QUERY_DBCELLS:
-//			try {
-//				ArrayList<ScannedCell> dbCells = new ArrayList<ScannedCell>();
-//				
-//				Bundle b = opService.getScannedCells();
-//				
-//				ScannedCell cell = null;
-//				for (int i = 0; i < b.size(); i++) {
-//					if (i % 2 == 0) {
-//						String[] cellInfo = b.getStringArray("cellinfo");
-//						cell = new ScannedCell(cellInfo[0], cellInfo[1], cellInfo[2], Integer.parseInt(cellInfo[3]));
-//					} else {
-//						String[] neighbours = b.getStringArray("neighbours");
-//						for (String neighbour : neighbours) {
-//							String[] neighbourInfo = neighbour.split(";");
-//							ScannedCell neighbourCell = new ScannedCell(); 
-//							neighbourCell.setCellID(neighbourInfo[0]);
-//							neighbourCell.setRSSI(Integer.parseInt(neighbourInfo[1]));
-//							cell.addNeighbour(neighbourCell);
-//						}
-//						dbCells.add(cell);
-//					}
-//				}
-//				
-//				sendToFragments(MessageTypes.QUERY_DBCELLS, dbCells);
-//			} catch (RemoteException e) {
-//				e.printStackTrace();
-//			}
-//		default:
-//			break;
-//		}
-//	}
-//	
-//	@Override
-//	public void messageFromFragment(MessageTypes cellCorrection, ScannedCell cell) {
-//		try {
-//			opService.saveCell(cell.getTimeStamp(), cell.getLocationName(), cell.getCellID(), cell.getRSSI());
-//		} catch (RemoteException e) {
-//			e.printStackTrace();
-//		}
-//	};
 
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
-		MenuInflater inflater = getSupportMenuInflater();
+		MenuInflater inflater = getMenuInflater();
 		inflater.inflate(R.menu.main, menu);
 
 		return super.onCreateOptionsMenu(menu);
@@ -537,13 +444,12 @@ public class MainActivity extends SherlockFragmentActivity implements ActivityCo
 							playButtonPressed = true;
 						}
 					} else {				
-						mCellScanManager.startCellScan(scanMode, refreshTime, labelName);
+						mCellScanManager.startCellScan(refreshTime, labelName);
 						isScanning = true;
 						item.setIcon(android.R.drawable.ic_media_pause);
 						showNotification();
 					}
 				} else {
-					System.out.println("ELSE");
 					if (!configFileSelected) {
 						Log.d("MainActivity", "Start manual scan");
 						String state = Environment.getExternalStorageState();
@@ -556,7 +462,7 @@ public class MainActivity extends SherlockFragmentActivity implements ActivityCo
 						}
 					} else {
 						if (pluginServiceBound) {
-							mCellScanManager.startCellScan(scanMode, refreshTime, labelName);
+							mCellScanManager.startCellScan(refreshTime, labelName);
 							isScanning = true;
 							item.setIcon(android.R.drawable.ic_media_pause);
 							showNotification();
@@ -641,13 +547,14 @@ public class MainActivity extends SherlockFragmentActivity implements ActivityCo
 				b.putString("cellrssi", scannedCell.getCellID());
 			}
 			try {
-				String detectedLocation = opService.checkCell(b);
+				String detectedLocation = opService.validateCell(b);
 				if (!detectedLocation.equals("")) {
 					validationFragmentInterface.sendDetectedLocation(detectedLocation);
 				}
 			} catch (RemoteException e) {
 				e.printStackTrace();
 			}
+			mFileManager.buildLogFile(timestamp, labelName, correctedLabel, cellID, rssi, scannedCells);
 		}
 
 		sendToFragments(MessageTypes.SCANNED_NEIGHBOURS, scannedCells);
@@ -658,6 +565,17 @@ public class MainActivity extends SherlockFragmentActivity implements ActivityCo
 	public void setRefreshTime(int refreshTime) {
 		this.refreshTime = refreshTime;
 		mCellScanManager.setRefreshTime(refreshTime);
+	}
+	
+
+	@Override
+	public void updateSelectedLocation(String selectedLocation) {
+		this.labelName = selectedLocation;
+	}
+	
+	@Override
+	public void updateCorrectedLocation(String correctedLabel) {
+		this.correctedLabel = correctedLabel;
 	}
 
 	@Override

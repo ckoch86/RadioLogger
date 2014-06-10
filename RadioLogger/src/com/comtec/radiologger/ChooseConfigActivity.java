@@ -1,4 +1,4 @@
-package com.comtec.radiologger.main;
+package com.comtec.radiologger;
 
 import java.io.BufferedReader;
 import java.io.File;

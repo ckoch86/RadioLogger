@@ -11,4 +11,6 @@ public interface ActivityCommunicationInterface {
 	void changeFragment();
 	void fragmentAttached();
 	void setRefreshTime(int refreshTime);
+	void updateSelectedLocation(String selectedLocation);
+	void updateCorrectedLocation(String newLocation);
 }
