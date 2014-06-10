@@ -1,0 +1,7 @@
+<resources>
+
+    <string name="app_name">RadioLoggerLib</string>
+    <string name="service_started">Scanning cell data</string>
+    <string name="service_label">Radiologger</string>
+
+</resources>
