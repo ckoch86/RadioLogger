@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">RadioLogger</string>
+    <string name="menu_quit">Quit</string>
+    <string name="title_fragment_manualscan">Manual Scan</string>
+    <string name="title_fragment_validation">Validation</string>
+    <string name="sb_refreshtime">Refresh Time:</string>
+    <string name="sb_refreshtime_default">5 sec (default)</string>
+    <string name="title_networkinformation">Networkinformation</string>
+    <string name="txt_operator">Operator:</string>
+    <string name="txt_cellid">Cell-ID:</string>
+    <string name="txt_signalstrength">RSSI:</string>
+    <string name="txt_networktype">Network:</string>
+    <string name="txt_blank"/>
+    <string name="txt_configfile">Config:</string>
+    <string name="txt_location">Location:</string>
+    <string name="menu_deletedatabase">Delete Database</string>
+    <string name="menu_scan">Scanning</string>
+    <string name="menu_chooseconfigfile">Choose Configfile</string>
+    <string name="title_neighbours">Neighbours</string>
+    <string name="txt_logfiles_directory">Logfiles</string>
+    <string name="txt_default_location">notAssigned</string>
+    <string name="txt_default_configfile">No config file selected</string>
+    <string name="txt_sdcard_error">SD Card not mounted</string>
+    <string name="txt_database_info">Do you want do clear the database?</string>
+    <string name="txt_scan_info">Please stop scan progress first!</string>
+    <string name="txt_exit_info">Networkscan in progress. Do you really want to exit?</string>
+    <string name="txt_remove_tag">Remove Tag</string>
+    <string name="txt_notificationmessage">scanning &#8230;</string>
+    <string name="txt_detectedlocation">Detected location:</string>
+    <string name="txt_correctedlocation">Corrected location</string>
+    <string name="txt_filter">Filter</string>
+    <string name="txt_infomsg_saveerror">Could not save data!</string>
+    <string name="txt_infomsg_savesuccessful">Data successfully saved!</string>
+    <string name="txt_info_newneighbours">No neighbours found</string>
+    <string name="menu_chooseplugin">Choose Plugin</string>
+    <string name="txt_noplugin">No Plugins found</string>
+    <string name="txt_newlocation">Unknown location</string>
+    <string name="txt_no_neighbours">No neighbours found</string>
+
+</resources>

@@ -1,0 +1,15 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto" >
+
+    <item android:id="@+id/menu_scan" android:icon="@android:drawable/ic_media_play" android:showAsAction="ifRoom" android:title="@string/menu_scan" android:orderInCategory="100">
+    </item>
+       <item
+        android:id="@+id/menu_chooseconfigfile"
+        android:title="@string/menu_chooseconfigfile" android:orderInCategory="200" android:showAsAction="never"/>
+    
+    <item android:id="@+id/menu_chooseplugin" android:showAsAction="never" android:orderInCategory="300" android:title="@string/menu_chooseplugin"></item><item
+        android:id="@+id/menu_deletedatebase"
+        android:title="@string/menu_deletedatabase" android:orderInCategory="400" android:showAsAction="never"/><item android:id="@+id/menu_quit" android:icon="@drawable/ic_launcher" android:orderInCategory="500" android:title="@string/menu_quit" android:showAsAction="never"/>
+        
+
+</menu>
