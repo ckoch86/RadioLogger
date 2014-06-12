@@ -1,4 +1,4 @@
-package com.example.evaluationindoorlocalizationgsm;
+package com.comtec.evaluationindoorlocalizationgsm;
 
 import java.util.ArrayList;
 
