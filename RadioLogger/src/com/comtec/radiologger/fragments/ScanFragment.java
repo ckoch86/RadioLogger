@@ -6,6 +6,7 @@ import android.app.Activity;
 import android.app.Fragment;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -39,6 +40,7 @@ public class ScanFragment extends Fragment implements ScanFragmentInterface {
 	private TextView txtOperator;
 	private TextView txtCellID;
 	private TextView txtRSSI;
+	private TextView txtPlugin;
 	private TextView txtNeighbours;
 	private TextView txtConfig;
 	private TextView txtLocation;
@@ -71,6 +73,8 @@ public class ScanFragment extends Fragment implements ScanFragmentInterface {
 	}
 
 	private void init() {
+		default_location = getString(R.string.txt_not_assigned);
+		
 		sbRefreshTime = (SeekBar) v.findViewById(R.id.sbRefresh);
 		sbRefreshTime.setOnSeekBarChangeListener(new OnSeekBarChangeListener() {
 
@@ -104,6 +108,7 @@ public class ScanFragment extends Fragment implements ScanFragmentInterface {
 		txtOperator = (TextView) v.findViewById(R.id.txtOperator);
 		txtRefreshTime = (TextView) v.findViewById(R.id.txtSeekbar);
 		txtRSSI = (TextView) v.findViewById(R.id.txtSignalStrength);
+		txtPlugin = (TextView) v.findViewById(R.id.txtPlugin);
 		
 		initButtons(defaultButtons);
 	}
@@ -124,6 +129,7 @@ public class ScanFragment extends Fragment implements ScanFragmentInterface {
 
 				@Override
 				public void onClick(View v) {
+					Log.d("ScanFragment", isScanning + " ");
 					if (isScanning) {
 						Button btnSelected = (Button) v;
 						selectedLocation = (String) btnSelected.getText();
@@ -162,6 +168,8 @@ public class ScanFragment extends Fragment implements ScanFragmentInterface {
 			initButtons(message);
 		} if (messageType.equals(MessageTypes.CONFIGFILE)) {
 			txtConfig.setText(message);
+		} if (messageType.equals(MessageTypes.PLUGINS)) {
+			txtPlugin.setText(message);
 		} if (messageType.equals(MessageTypes.REFRESH_TIME)) {
 			int refreshTime = Integer.parseInt(message);
 			defaultRefreshTime = refreshTime;
@@ -193,8 +201,7 @@ public class ScanFragment extends Fragment implements ScanFragmentInterface {
 		if (!messageType.equals(MessageTypes.QUERY_DBCELLS)) {
 			String neighboursOutput = "";
 			if (scannedNeighbours == null || scannedNeighbours.size() == 0) {
-				txtNeighbours
-						.setText(getString(R.string.txt_info_newneighbours));
+				txtNeighbours.setText(getString(R.string.txt_info_newneighbours));
 			} else {
 				for (ScannedCell cell : scannedNeighbours) {
 					String placeHolder = "";

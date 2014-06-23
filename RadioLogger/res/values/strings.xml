@@ -37,7 +37,7 @@
     <string name="txt_newlocation">Unknown location</string>
     <string name="txt_no_neighbours">No neighbours found</string>
     <string name="txt_no_configfile">No configfile selected</string>
-    <string name="txt_not_assigned">Not assigned</string>
+    <string name="txt_not_assigned">notAssigned</string>
     <string name="txt_selected_plugin">Plugin:</string>
     <string name="txt_no_plugin_selected">No plugin selected</string>
 

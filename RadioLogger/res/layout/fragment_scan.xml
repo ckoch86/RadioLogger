@@ -175,7 +175,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginLeft="5dp"
-                android:text="@string/txt_not_assigned" />
+                android:text="@string/txt_no_configfile" />
         </LinearLayout>
 
         <LinearLayout
@@ -193,17 +193,38 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginLeft="5dp"
-                android:text="@string/txt_no_configfile" />
+                android:text="@string/txt_not_assigned" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="2dp" >
+
+            <TextView
+                android:id="@+id/tvPlugin"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/txt_selected_plugin" />
+
+            <TextView
+                android:id="@+id/txtPlugin"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="5dp"
+                android:text="@string/txt_no_plugin_selected" />
         </LinearLayout>
 
         <GridView
             android:id="@+id/gvButtons"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginBottom="2dp"
             android:horizontalSpacing="2dp"
             android:numColumns="3"
             android:smoothScrollbar="true"
             android:verticalSpacing="2dp" >
+
         </GridView>
     </LinearLayout>
 
