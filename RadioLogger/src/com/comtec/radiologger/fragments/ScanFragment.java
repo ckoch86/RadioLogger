@@ -49,7 +49,6 @@ public class ScanFragment extends Fragment implements ScanFragmentInterface {
 	// default button configuration
 	private String defaultButtons = "Location 1,Location 2,Location 3,Location 4,Location 5,Location 6,Location 7,Location 8";
 
-	private boolean isScanning = false;
 	private ActivityCommunicationInterface mActivityCommunicator;
 
 	private String default_location;
@@ -129,16 +128,13 @@ public class ScanFragment extends Fragment implements ScanFragmentInterface {
 
 				@Override
 				public void onClick(View v) {
-					Log.d("ScanFragment", isScanning + " ");
-					if (isScanning) {
-						Button btnSelected = (Button) v;
-						selectedLocation = (String) btnSelected.getText();
-						if (selectedLocation.equals(getString(R.string.txt_remove_tag))) {
-							selectedLocation = default_location;
-						}
-						txtLocation.setText(selectedLocation);
-						mActivityCommunicator.updateSelectedLocation(selectedLocation);
+					Button btnSelected = (Button) v;
+					selectedLocation = (String) btnSelected.getText();
+					if (selectedLocation.equals(getString(R.string.txt_remove_tag))) {
+						selectedLocation = default_location;
 					}
+					txtLocation.setText(selectedLocation);
+					mActivityCommunicator.updateSelectedLocation(selectedLocation);
 				}
 			});
 			locationBtn.setId(i);
@@ -167,6 +163,7 @@ public class ScanFragment extends Fragment implements ScanFragmentInterface {
 		} if (messageType.equals(MessageTypes.LOCATION_NAMES)) {
 			initButtons(message);
 		} if (messageType.equals(MessageTypes.CONFIGFILE)) {
+			Log.d("ScanFragment", "Configname: " + message);
 			txtConfig.setText(message);
 		} if (messageType.equals(MessageTypes.PLUGINS)) {
 			txtPlugin.setText(message);
@@ -189,10 +186,6 @@ public class ScanFragment extends Fragment implements ScanFragmentInterface {
 			txtNetwork.setText(message);
 		} if (messageType.equals(MessageTypes.CELLID)) {
 			txtCellID.setText(message);
-		}  if (messageType.equals(MessageTypes.START_SCAN)) {
-			isScanning = true;
-		} if (messageType.equals(MessageTypes.STOP_SCAN)) {
-			isScanning = false;
 		}
 	}
 

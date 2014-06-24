@@ -126,11 +126,10 @@ public class ChoosePluginActivity extends Activity implements OnItemClickListene
 
 	@Override
 	public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-		String category = categoriess.get(position);
-		if (category.length() > 0) {
+		String pluginName = categoriess.get(position);
+		if (pluginName.length() > 0) {
 			Intent intent = new Intent(getApplicationContext(), MainActivity.class);
-			Log.d("ChoosePluginActivity", category);
-			intent.putExtra(MessageTypes.PLUGINS.toString(), category);
+			intent.putExtra(MessageTypes.PLUGINS.toString(), pluginName);
 			setResult(RESULT_OK, intent);
 			finish();
 		}

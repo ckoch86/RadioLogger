@@ -178,77 +178,65 @@ public class MainActivity extends Activity implements ActivityCommunicationInter
 		super.onActivityResult(requestCode, resultCode, data);
 
 		if (resultCode == RESULT_OK) {
-			Log.d("MainActivity", "OnActivityResult");
-			if (data.getExtras().containsKey(MessageTypes.LOCATION_NAMES.toString())) {
-				
-				locationNames = data.getStringExtra(MessageTypes.LOCATION_NAMES.toString());
-				
-				sendToFragments(MessageTypes.LOCATION_NAMES, locationNames);
-			}
+			Log.d("MainActivity", "OnActivityResult : " + data.getExtras());
+			
 			if (data.getExtras().containsKey(MessageTypes.CONFIGFILE.toString())) {
+				Log.d("MainActivity", "Test");
 				configFileSelected = true;
-				if (!pluginServiceBound) {
-					Intent intent = new Intent(getApplicationContext(), ChoosePluginActivity.class);
-					startActivityForResult(intent, 1);
-				} else {
-					configFile = data.getStringExtra(MessageTypes.CONFIGFILE.toString());
-					refreshTime = data.getIntExtra(MessageTypes.REFRESH_TIME.toString(), 0);
-					labelName = default_location;
-					
-					sendToFragments(MessageTypes.LOCATION_NAMES, locationNames);
-					sendToFragments(MessageTypes.CONFIGFILE, configFile);
-
-					if (playButtonPressed && scanMode.equals(ScanModes.MANUAL)) {
-						sendToFragments(MessageTypes.START_SCAN, "");
-						showNotification();
-						if (mCellScanManager != null) {
-							mCellScanManager.startCellScan(refreshTime, labelName);
+				labelName = default_location;
+				configFile = data.getStringExtra(MessageTypes.CONFIGFILE.toString());
+				
+				sendToFragments(MessageTypes.CONFIGFILE, configFile);
+				
+				if (playButtonPressed) {
+					if (!pluginServiceBound) {
+						Intent intent = new Intent(getApplicationContext(), ChoosePluginActivity.class);
+						startActivityForResult(intent, 1);
+					} else {
+						if (playButtonPressed && scanMode.equals(ScanModes.MANUAL)) {
+							sendToFragments(MessageTypes.START_SCAN, "");
+							showNotification();
+							if (mCellScanManager != null) {
+								mCellScanManager.startCellScan(refreshTime, labelName);
+							}
+							isScanning = true;
+							iconScanState.setIcon(android.R.drawable.ic_media_pause);
 						}
-						isScanning = true;
-						iconScanState.setIcon(android.R.drawable.ic_media_pause);
 					}
 				}
 			}
+			if (data.getExtras().containsKey(MessageTypes.LOCATION_NAMES.toString())) {
+				locationNames = data.getStringExtra(MessageTypes.LOCATION_NAMES.toString());
+				sendToFragments(MessageTypes.LOCATION_NAMES, locationNames);
+			}
 			if (data.getExtras().containsKey(MessageTypes.REFRESH_TIME.toString())) {
 				refreshTime = data.getIntExtra(MessageTypes.REFRESH_TIME.toString(), 0);
-				
 				sendToFragments(MessageTypes.REFRESH_TIME, String.valueOf(refreshTime));
 			}
 			
-			if((data.getExtras().containsKey(MessageTypes.START_SCAN.toString()))) {
-				showNotification();
-				mCellScanManager.setRefreshTime(refreshTime);
-			}
-			if ((data.getExtras().containsKey(MessageTypes.STOP_SCAN.toString()))) {
-				iconScanState.setIcon(android.R.drawable.ic_media_play);
-				mNotifyManager.cancel(NOTIFY_ID);
-			}
 			if ((data.getExtras().containsKey(MessageTypes.PLUGINS.toString()))) {
-				if (!configFileSelected) {
-					Log.d("MainActivty", "Zurück von PluginChooser und keine Configfile gewählt");
-					Intent intent = new Intent(getApplicationContext(), ChooseConfigActivity.class);
-					startActivityForResult(intent, 1);
-				} else {
-					Log.d("MainActivty", "Zurück von PluginChooser und bereits Configfile gewählt");
-					if (playButtonPressed) {
-						Log.d("MainActivty", "Play buttin gedrückt Zurück von PluginChooser und bereits Configfile gewählt Starte scan ");
-						showNotification();
-						if (mCellScanManager != null) {
-							mCellScanManager.startCellScan(refreshTime, labelName);
-						}
-						isScanning = true;
-						iconScanState.setIcon(android.R.drawable.ic_media_pause);
-					}
+				pluginCategory = data.getStringExtra(MessageTypes.PLUGINS.toString());
+				sendToFragments(MessageTypes.PLUGINS, pluginCategory);
+				
+				if (!pluginServiceBound) {
+					bindOpService();
 					
-					pluginCategory = data.getStringExtra(MessageTypes.PLUGINS.toString());
-
-					if (!pluginServiceBound) {
-						bindOpService();
-					} else {
-						pluginWarning = "A plugin is already bound. Do you want to unbind the " + pluginCategory + "-Plugin and bind " + data.getStringExtra(MessageTypes.PLUGINS.toString()) + "-Plugin instead?";
-						showDialog(pluginWarning);
+					if (playButtonPressed) {
+						if (!configFileSelected) {
+							Intent intent = new Intent(getApplicationContext(), ChooseConfigActivity.class);
+							startActivityForResult(intent, 1);
+						} else {
+							showNotification();
+							if (mCellScanManager != null) {
+								mCellScanManager.startCellScan(refreshTime, labelName);
+							}
+							isScanning = true;
+							iconScanState.setIcon(android.R.drawable.ic_media_pause);
+						}					
 					}
-					sendToFragments(MessageTypes.PLUGINS, pluginCategory);
+				} else {
+					pluginWarning = "A plugin is already bound. Do you want to unbind the " + pluginCategory + "-Plugin and bind " + data.getStringExtra(MessageTypes.PLUGINS.toString()) + "-Plugin instead?";
+					showDialog(pluginWarning);
 				}
 			}
 		}
@@ -393,6 +381,9 @@ public class MainActivity extends Activity implements ActivityCommunicationInter
 
 	@Override
 	public void changeFragment() {
+		if (isScanning) {
+			stopScanning();
+		}
 		if (scanMode.equals(ScanModes.MANUAL)) {
 			scanMode = ScanModes.AUTO;
 		} else {
