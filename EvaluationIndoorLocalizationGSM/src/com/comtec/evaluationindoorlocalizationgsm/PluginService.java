@@ -12,14 +12,9 @@ import android.os.RemoteException;
 import android.app.Service;
 import android.content.Intent;
 
-/**
- * Ich habe alle Funktionen so gelassen, wie ich sie in dem andern Plugin auch habe.
- * Da muss man auch eigentlich nichts mehr daran aendern.
- * Die einzige Funktion die man aendern muss, ist die validateCell(Bundle)-Funktion
- */
 public class PluginService extends Service {
 
-	static final String CATEGORY_ADD_IF = "EvaluationIndoorLocalizationGSM";
+	static final String CATEGORY_ADD_dIF = "EvaluationIndoorLocalizationGSM";
 	
 	private DatabaseHandler mDBHandler;
 	
@@ -66,9 +61,29 @@ public class PluginService extends Service {
 			 */
 			ScannedCell cell = parseBundle(b);
 			
-			//TODO: IF-ELSE-Struktur
+			ArrayList<ScannedCell> cells = new ArrayList<ScannedCell>();
 			
-			return "";
+			cells.add(cell);
+			for (ScannedCell scannedCell : cell.getNeighbours()) {
+				cells.add(scannedCell);
+			}
+			
+			for (ScannedCell scannedCell : cells) {
+				if (scannedCell.getCellID().equals("44637")) {
+					if (scannedCell.getRSSI() >= -97) {
+						return "Küche";
+					}
+				} else if (scannedCell.getCellID().equals("4557")) {
+					if (scannedCell.getRSSI() >= -102) {
+						return "Küche";
+					}
+				} else if (scannedCell.getCellID().equals("4555")) {
+					if (scannedCell.getRSSI() >= -99) {
+						return "Sekretariat";
+					}
+				}
+			}
+			return "Büro";
 		}
 	};
 	

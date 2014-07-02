@@ -14,7 +14,7 @@
         android:label="@string/app_name"
         android:theme="@style/AppTheme" >
         <service
-            android:name="PluginService"
+            android:name="com.comtec.evaluationindoorlocalizationgsm.PluginService"
             android:exported="true" >
             <intent-filter>
                 <action android:name="comtec.intent.action.PICK_PLUGIN" />

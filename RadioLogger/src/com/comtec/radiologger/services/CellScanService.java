@@ -54,6 +54,9 @@ public class CellScanService extends Service {
 
 	@Override
 	public int onStartCommand(Intent intent, int flags, int startId) {
+		if (intent.getExtras() == null) {
+			System.out.println("Bundles == null");
+		}
 		Bundle extras = intent.getExtras();
 
 		long tmpRefreshTime = extras.getLong(MSG_REFRESHTIME);
@@ -122,7 +125,7 @@ public class CellScanService extends Service {
 					}
 				}
 			}
-
+			
 			b.putString("neighbours", neighboursList);
 			sendToCellScanner(b, ScanManager.SCANNED_NEIGHBOURS);
 			handler.postDelayed(this, refreshTime);

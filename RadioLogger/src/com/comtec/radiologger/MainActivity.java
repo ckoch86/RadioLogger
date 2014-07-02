@@ -30,7 +30,6 @@ import android.view.ViewConfiguration;
 import android.view.WindowManager;
 import android.widget.Toast;
 
-import com.comtec.radiologger.R;
 import com.comtec.radiologger.adapter.SectionPagerAdapter;
 import com.comtec.radiologger.interfaces.ActivityCommunicationInterface;
 import com.comtec.radiologger.interfaces.NetworkInfoInterface;
@@ -113,7 +112,7 @@ public class MainActivity extends Activity implements ActivityCommunicationInter
 	 * validation_newlocation if a location is changed at
 	 * validationview
 	 */
-	private ScanModes scanMode = ScanModes.MANUAL;
+	private ScanModes scanMode = ScanModes.SCAN;
 	private int refreshTime;
 	private boolean pluginServiceBound = false;
 	private boolean configFileSelected = false;
@@ -158,10 +157,8 @@ public class MainActivity extends Activity implements ActivityCommunicationInter
 		}
 		
 		mFileManager = new FileManager(this);
-		
-		configFile = default_configfile;
 
-		// settings default values
+		// initialize default values from res/strings
 		db_info = getString(R.string.txt_database_info);
 		default_configfile = getString(R.string.txt_no_configfile);
 		default_location = getString(R.string.txt_not_assigned);
@@ -173,6 +170,9 @@ public class MainActivity extends Activity implements ActivityCommunicationInter
 		configFile = default_configfile;
 	}
 
+	/**
+	 * onActivityResult is called when ChooseConfigFile-, and ChoosePlugin-Activity finish
+	 */
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
 		super.onActivityResult(requestCode, resultCode, data);
@@ -180,6 +180,11 @@ public class MainActivity extends Activity implements ActivityCommunicationInter
 		if (resultCode == RESULT_OK) {
 			Log.d("MainActivity", "OnActivityResult : " + data.getExtras());
 			
+			/*
+			 * Returning from ChooseConfigFile-Activity
+			 */
+			
+			// getting configfilename from ChooseConfigFile-Activity
 			if (data.getExtras().containsKey(MessageTypes.CONFIGFILE.toString())) {
 				Log.d("MainActivity", "Test");
 				configFileSelected = true;
@@ -188,32 +193,34 @@ public class MainActivity extends Activity implements ActivityCommunicationInter
 				
 				sendToFragments(MessageTypes.CONFIGFILE, configFile);
 				
+				// if play button is pressed the scan will start immediately if a plugin was already selected
 				if (playButtonPressed) {
 					if (!pluginServiceBound) {
+						// starting ChoosePluginActivity with expecting a result (calling onActivityResult function)
 						Intent intent = new Intent(getApplicationContext(), ChoosePluginActivity.class);
 						startActivityForResult(intent, 1);
 					} else {
-						if (playButtonPressed && scanMode.equals(ScanModes.MANUAL)) {
-							sendToFragments(MessageTypes.START_SCAN, "");
-							showNotification();
-							if (mCellScanManager != null) {
-								mCellScanManager.startCellScan(refreshTime, labelName);
-							}
-							isScanning = true;
-							iconScanState.setIcon(android.R.drawable.ic_media_pause);
+						if (playButtonPressed && scanMode.equals(ScanModes.SCAN)) {
+							startScanning();
 						}
 					}
 				}
 			}
+			// getting label names (locations for buttons) from ChooseConfigFile-Activity
 			if (data.getExtras().containsKey(MessageTypes.LOCATION_NAMES.toString())) {
 				locationNames = data.getStringExtra(MessageTypes.LOCATION_NAMES.toString());
 				sendToFragments(MessageTypes.LOCATION_NAMES, locationNames);
 			}
+			// getting refreshtime from ChooseConfigFile-Activity
 			if (data.getExtras().containsKey(MessageTypes.REFRESH_TIME.toString())) {
 				refreshTime = data.getIntExtra(MessageTypes.REFRESH_TIME.toString(), 0);
 				sendToFragments(MessageTypes.REFRESH_TIME, String.valueOf(refreshTime));
 			}
 			
+			/*
+			 * Returning from ChoosePlugin-Activity
+			 */
+			// getting pluginname from ChoosePlugin-Activity and starting Plugin
 			if ((data.getExtras().containsKey(MessageTypes.PLUGINS.toString()))) {
 				pluginCategory = data.getStringExtra(MessageTypes.PLUGINS.toString());
 				sendToFragments(MessageTypes.PLUGINS, pluginCategory);
@@ -221,20 +228,18 @@ public class MainActivity extends Activity implements ActivityCommunicationInter
 				if (!pluginServiceBound) {
 					bindOpService();
 					
+					// if play button is pressed the scan will start immediately if a configfile was already selected
 					if (playButtonPressed) {
 						if (!configFileSelected) {
+							//starting ChoosePluginActivity with expecting a result (calling onActivityResult function)
 							Intent intent = new Intent(getApplicationContext(), ChooseConfigActivity.class);
 							startActivityForResult(intent, 1);
 						} else {
-							showNotification();
-							if (mCellScanManager != null) {
-								mCellScanManager.startCellScan(refreshTime, labelName);
-							}
-							isScanning = true;
-							iconScanState.setIcon(android.R.drawable.ic_media_pause);
+							startScanning();
 						}					
 					}
 				} else {
+					// if a plugin was already chosen a DialogBox will pop up where to select the new chosen or keep the already bound plugin
 					pluginWarning = "A plugin is already bound. Do you want to unbind the " + pluginCategory + "-Plugin and bind " + data.getStringExtra(MessageTypes.PLUGINS.toString()) + "-Plugin instead?";
 					showDialog(pluginWarning);
 				}
@@ -320,6 +325,17 @@ public class MainActivity extends Activity implements ActivityCommunicationInter
 
 		mNotifyManager.notify(NOTIFY_ID, notifyBuilder.build());
 	}
+	
+	private void startScanning() {
+		showNotification();
+		if (mCellScanManager != null) {
+			mCellScanManager.startCellScan(refreshTime, labelName);
+		}
+		isScanning = true;
+		iconScanState.setIcon(android.R.drawable.ic_media_pause);
+		mFileManager.startScanning(networkType, operator, configFile);
+		sendToFragments(MessageTypes.START_SCAN, "");
+	}
 
 	/**
 	 * stops scanning and set isScanning to false NotifyIcon disappears Scan
@@ -338,7 +354,7 @@ public class MainActivity extends Activity implements ActivityCommunicationInter
 			}
 
 			if (!configFile.equals(default_configfile)) {
-				mFileManager.saveLogData(networkType, operator, configFile);
+				mFileManager.stopScanning();
 			} else {
 				showInfoMessage(getString(R.string.txt_infomsg_saveerror), Toast.LENGTH_SHORT);
 			}
@@ -384,10 +400,10 @@ public class MainActivity extends Activity implements ActivityCommunicationInter
 		if (isScanning) {
 			stopScanning();
 		}
-		if (scanMode.equals(ScanModes.MANUAL)) {
-			scanMode = ScanModes.AUTO;
+		if (scanMode.equals(ScanModes.SCAN)) {
+			scanMode = ScanModes.VALIDATION;
 		} else {
-			scanMode = ScanModes.MANUAL;
+			scanMode = ScanModes.SCAN;
 		}
 	}
 
@@ -438,11 +454,7 @@ public class MainActivity extends Activity implements ActivityCommunicationInter
 					}
 				} else {
 					if (pluginServiceBound) {
-						sendToFragments(MessageTypes.START_SCAN, "");
-						mCellScanManager.startCellScan(refreshTime, labelName);
-						isScanning = true;
-						item.setIcon(android.R.drawable.ic_media_pause);
-						showNotification();
+						startScanning();
 					} else {
 						Intent intent = new Intent(getApplicationContext(), ChoosePluginActivity.class);
 						startActivityForResult(intent, 1);
@@ -507,9 +519,9 @@ public class MainActivity extends Activity implements ActivityCommunicationInter
 	
 	@Override
 	public void updateNeighbours(String timestamp, ArrayList<ScannedCell> scannedCells) {
-		if (scanMode.equals(ScanModes.MANUAL)) {
-			mFileManager.buildLogFile(timestamp, labelName, cellID, rssi, scannedCells);
-		} else if (scanMode.equals(ScanModes.AUTO)) {
+		if (scanMode.equals(ScanModes.SCAN)) {
+			mFileManager.buildLogFile(timestamp, labelName, null, cellID, rssi, scannedCells);
+		} else if (scanMode.equals(ScanModes.VALIDATION)) {
 			Bundle b = new Bundle();
 			b.putString("currentcell", cellID);
 			b.putInt("currentrssi", rssi);
@@ -521,13 +533,17 @@ public class MainActivity extends Activity implements ActivityCommunicationInter
 				b.putString("cellid", scannedCell.getCellID());
 				b.putString("cellrssi", scannedCell.getCellID());
 			}
-			try {
-				String detectedLocation = opService.validateCell(b);
-				if (!detectedLocation.equals("")) {
-					validationFragmentInterface.sendDetectedLocation(detectedLocation);
+
+			if (scanMode == ScanModes.VALIDATION) {
+				try {
+					Log.d("MainActivity", "Service Message!!!!");
+					String detectedLocation = opService.validateCell(b);
+					if (!detectedLocation.equals("")) {
+						validationFragmentInterface.sendDetectedLocation(detectedLocation);
+					}
+				} catch (RemoteException e) {
+					e.printStackTrace();
 				}
-			} catch (RemoteException e) {
-				e.printStackTrace();
 			}
 			mFileManager.buildLogFile(timestamp, labelName, correctedLabel, cellID, rssi, scannedCells);
 		}

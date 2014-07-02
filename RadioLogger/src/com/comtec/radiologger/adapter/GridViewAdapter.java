@@ -13,7 +13,6 @@ public class GridViewAdapter extends BaseAdapter {
 
 	public GridViewAdapter(ArrayList<Button> b) {
 		mButtons = b;
-		
 	}
 
 	public int getCount() {
@@ -32,13 +31,6 @@ public class GridViewAdapter extends BaseAdapter {
 	public View getView(int position, View convertView, ViewGroup parent) {
 		Button button;
 		button = (Button) mButtons.get(position);
-		// if (convertView == null) {
-		// button = (Button) mButtons.get(position);
-		// }
-		// // else {
-		// // button = (Button) convertView;
-		// // }
 		return button;
 	}
-
 }

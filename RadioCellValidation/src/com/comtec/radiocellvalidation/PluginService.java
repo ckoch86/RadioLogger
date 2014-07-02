@@ -51,7 +51,7 @@ public class PluginService extends Service {
 		}
 
 		@Override
-		public String validateCell(Bundle b) throws RemoteException {
+		public void validateCell(Bundle b) throws RemoteException {
 			ScannedCell currentCell = new ScannedCell();
 			currentCell.setCellID(b.getString("cellid"));
 			currentCell.setRSSI(b.getInt("rssi"));
@@ -83,12 +83,17 @@ public class PluginService extends Service {
 							}
 						}
 						if (countNeighbours == currentCell.getNeighbours().size()) {
-							return cell.getLocationName();
+							detectedLocation(cell.getLocationName());
 						}
 					}
 				}
 			}
-			return "";
+			detectedLocation("");
+		}
+
+		@Override
+		public String detectedLocation(String location) throws RemoteException {
+			return location;
 		}
 	};
 	

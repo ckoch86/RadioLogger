@@ -1,33 +1,31 @@
 package com.comtec.radiologger.model;
 
-import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
-
-import com.comtec.radiologger.R;
 
 import android.content.Context;
 import android.os.Environment;
-import android.util.Log;
 import android.widget.Toast;
+
+import com.comtec.radiologger.R;
 
 public class FileManager {
 	
-	private String logData = "";
-	private String sdCardPath;
 	private String logFilePath;
 	
 	private Context context;
+	
+	private FileWriter fw;
+	private BufferedWriter bw;
 	
 	public FileManager(Context context) {
 		this.context = context;
 		
 		// Creating App Directory if not exist
-		sdCardPath = Environment.getExternalStorageDirectory().getPath() + "/" + context.getString(R.string.app_name);
+		String sdCardPath = Environment.getExternalStorageDirectory().getPath() + "/" + context.getString(R.string.app_name);
 		logFilePath = sdCardPath + "/" + context.getString(R.string.txt_logfiles_directory);
 
 		File appDir = new File(sdCardPath);
@@ -40,125 +38,78 @@ public class FileManager {
 			logfileDir.mkdirs();
 		}
 	}
-	/**
-	 * Building Logfile
-	 * @param logData 
-	 * 
-	 * @param scannedCells
-	 * @param scanMode
-	 */
-	public void buildLogFile(String logData, ArrayList<ScannedCell> scannedCells, ScanModes scanMode, String validationLabel, String validation_newlocation, String cellID, int rssi) {
-		if (scanMode.equals(ScanModes.MANUAL)) {
-			Log.d("MainActivity", "Manual Scan: building logfile");
-			if (scannedCells == null) {
-				this.logData = this.logData + logData + "\n";
-			} else {
-				String logNeighbours = "";
-				for (ScannedCell cell : scannedCells) {
-					logNeighbours = logNeighbours + ":" + cell.getCellID() + "," + cell.getRSSI();
-				}
-				this.logData = this.logData + logData + logNeighbours + "\n";
-			}
-		} else {
-			Log.d(getClass().getName(), "Validation: building logfile");
-			if (scannedCells == null) {
-				if (validation_newlocation == null) {
-					validation_newlocation = validationLabel;
-				}
-				this.logData = this.logData + logData + System.currentTimeMillis() + ":"
-						+ validationLabel + ":"
-						+ validation_newlocation + ":"
-						+ cellID + "," + rssi
-						+ " \n";
-			} else {
-				this.logData = this.logData + logData + System.currentTimeMillis() + " : "
-						+ validationLabel + " : "
-						+ cellID + "," + rssi;
 
-				String logNeighbours = "";
-				for (ScannedCell cell : scannedCells) {
-					logNeighbours = logNeighbours + " : " + cell.getCellID()
-							+ "," + cell.getRSSI();
-				}
-				this.logData = this.logData + logNeighbours + "\n";
-			}
+	public void startScanning(String networkType, String operator, String configFile) {
+		String fileName = logFilePath + "/RadioLogger_" 
+									+ System.currentTimeMillis() + "_" 
+									+ networkType + "_" 
+									+ operator + "_"
+									+ configFile + ".txt";
+		try {
+			fw = new FileWriter(fileName);
+			bw = new BufferedWriter(fw);
+		} catch (IOException e) {
+			e.printStackTrace();
+			showInfoMessage("Could not start FileWriter", Toast.LENGTH_LONG);
 		}
 	}
 
-
-	public void saveLogData(String networkType, String operator, String configFile) {
-		Log.d("MainActivity", "Saving logfile");
+	public void stopScanning() {
+		try {
+			bw.close();
+			fw.close();
+			showInfoMessage("Logfile successfully saved", Toast.LENGTH_LONG);
+		} catch (IOException e) {
+			e.printStackTrace();
+			showInfoMessage("Error while closing FileWriter", Toast.LENGTH_LONG);
+		}
+	}
+	
+	/**
+	 * Creating LogFile entry
+	 * Format: timestamp:detectedLocation:correctedLocation:currentCellID,currentCellRSSI:neighbourCellID,neighbourRSSI:neighbourCellID,neighbourRSSI: ...
+	 * 
+	 * Set correctedLocation NULL if saving data from ScanFragment. CorrectedLocation only used during validation
+	 * @param timestamp
+	 * @param labelName
+	 * @param correctedLabel
+	 * @param cellID
+	 * @param rssi
+	 * @param scannedCells
+	 */
+	public void buildLogFile(String timestamp, String labelName, String correctedLabel, String cellID, int rssi, ArrayList<ScannedCell> scannedCells) {
+		StringBuilder sb = new StringBuilder();
+		if (correctedLabel == null) {
+			sb.append(timestamp + ":" + labelName + ":" + cellID + "," + rssi);
+		} else {
+			sb.append(timestamp + ":" + labelName + ":" + correctedLabel + ":" + cellID + "," + rssi);
+		}
 		
-
-			String fileName = logFilePath + "/RadioLogger_"
-					+ System.currentTimeMillis() + "_" + networkType + "_"
-					+ operator + "_" + configFile + ".txt";
-			try {
-				File myFile = new File(fileName);
-				if (!myFile.exists()) {
-					myFile.createNewFile();
-					FileOutputStream fOut = new FileOutputStream(myFile);
-					OutputStreamWriter myOutWriter = new OutputStreamWriter(
-							fOut);
-					myOutWriter.append(logData);
-					myOutWriter.close();
-					fOut.close();
+		if (scannedCells != null) {
+			sb.append(":");
+			
+			for (int i = 0; i < scannedCells.size(); i++) {
+				String suffix = "";
+				if (i < scannedCells.size() - 1) {
+					suffix = ":";
 				} else {
-					try {
-						FileInputStream fIn = new FileInputStream(myFile);
-						BufferedReader myReader = new BufferedReader(
-								new InputStreamReader(fIn));
-						String aDataRow = "";
-						String aBuffer = "";
-						while ((aDataRow = myReader.readLine()) != null) {
-							aBuffer += aDataRow + "\n";
-						}
-						logData = aBuffer + logData;
-						myReader.close();
-					} catch (Exception e) {
-					}
-
-					FileOutputStream fOut = new FileOutputStream(myFile);
-					OutputStreamWriter myOutWriter = new OutputStreamWriter(
-							fOut);
-					myOutWriter.append(logData);
-					myOutWriter.close();
-					fOut.close();
+					suffix = "";
 				}
-				showInfoMessage(context.getString(R.string.txt_infomsg_savesuccessful),
-						Toast.LENGTH_SHORT);
-			} catch (Exception e) {
+				sb.append(scannedCells.get(i).getCellID() + "," + scannedCells.get(i).getRSSI() + suffix);	
 			}
-
-		logData = "";
+		}
+		
+		sb.append("\n");
+		String logData = sb.toString();
+		try {
+			bw.write(logData);
+		} catch (IOException e) {
+			e.printStackTrace();
+			showInfoMessage("Error while writing new line to logfile", Toast.LENGTH_LONG);
+		}
 	}
 	
 	private void showInfoMessage(String message, int time) {
 		Toast.makeText(context, message, time).show();
-	}
-
-	/*
-	 * Format:
-	 * timestamp:detectedLocation:correctedLocation:currentCellID,currentCellRSSI:neighbourCellID,neighbourCellRSSI:neighbourCellID, ...
-	 */
-	public void buildLogFile(String timestamp, String labelName, String cellID, int rssi, ArrayList<ScannedCell> scannedCells) {
-		logData += timestamp + ":" + labelName +  ":" + cellID + "," + rssi;
-		if (scannedCells.size() > 0) {
-			logData += ":";
-			for (ScannedCell scannedCell : scannedCells) {
-				logData += scannedCell.getRSSI() + "," + scannedCell.getRSSI();
-			}
-		}
-		logData += "\n";
-	}
-	public void buildLogFile(String timestamp, String labelName, String correctedLabel, String cellID, int rssi, ArrayList<ScannedCell> scannedCells) {
-		logData += timestamp + ":" + labelName + ":" + correctedLabel + ":" + cellID + "," + rssi;
-		if (scannedCells.size() > 0) {
-			logData += ":";
-			for (ScannedCell scannedCell : scannedCells) {
-				logData += scannedCell.getRSSI() + "," + scannedCell.getRSSI();
-			}
-		}
-		logData += "\n";
 	}
 }

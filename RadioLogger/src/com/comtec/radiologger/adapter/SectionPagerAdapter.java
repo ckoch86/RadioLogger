@@ -14,11 +14,12 @@ import com.comtec.radiologger.fragments.ValidationFragment;
 
 public class SectionPagerAdapter extends FragmentPagerAdapter {
 	
+	private final int FRAGMENT_COUNT = 2;
+	
 	private Context context;
 
 	public SectionPagerAdapter(FragmentManager fragmentManager, Context context) {
 		super(fragmentManager);
-		
 		this.context = context;
 	}
 
@@ -42,7 +43,7 @@ public class SectionPagerAdapter extends FragmentPagerAdapter {
 
 	@Override
 	public int getCount() {
-		return 2;
+		return FRAGMENT_COUNT;
 	}
 
 	@Override

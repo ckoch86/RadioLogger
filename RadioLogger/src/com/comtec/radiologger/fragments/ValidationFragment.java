@@ -6,6 +6,7 @@ import android.app.Activity;
 import android.app.Fragment;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -191,11 +192,17 @@ public class ValidationFragment extends Fragment implements ValidationFragmentIn
 
 	@Override
 	public void sendDetectedLocation(String detectedLocation) {
+		Log.d("ValidationFragment", "detected location: " + detectedLocation);
 		for (Button btn : mButtons) {
 			if (btn.getText().toString().equals(detectedLocation)) {
-				selectedButton = btn;
-				btn.setBackgroundResource(R.drawable.button_green);
-				txtDetectedLocation.setText(btn.getText());
+				if (btn != selectedButton) {
+					if (selectedButton != null) {
+						selectedButton.setBackgroundResource(R.drawable.button_blue);
+					}
+					selectedButton = btn;
+					btn.setBackgroundResource(R.drawable.button_green);
+					txtDetectedLocation.setText(btn.getText());
+				}
 			}
 		}
 	}
