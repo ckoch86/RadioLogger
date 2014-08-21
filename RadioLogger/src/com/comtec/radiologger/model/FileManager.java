@@ -4,8 +4,10 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-
+import java.util.Date;
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.os.Environment;
 import android.widget.Toast;
@@ -21,8 +23,12 @@ public class FileManager {
 	private FileWriter fw;
 	private BufferedWriter bw;
 	
+	private ArrayList<String> buffer;
+	
 	public FileManager(Context context) {
 		this.context = context;
+		
+		buffer = new ArrayList<String>();
 		
 		// Creating App Directory if not exist
 		String sdCardPath = Environment.getExternalStorageDirectory().getPath() + "/" + context.getString(R.string.app_name);
@@ -65,24 +71,12 @@ public class FileManager {
 		}
 	}
 	
-	/**
-	 * Creating LogFile entry
-	 * Format: timestamp:detectedLocation:correctedLocation:currentCellID,currentCellRSSI:neighbourCellID,neighbourRSSI:neighbourCellID,neighbourRSSI: ...
-	 * 
-	 * Set correctedLocation NULL if saving data from ScanFragment. CorrectedLocation only used during validation
-	 * @param timestamp
-	 * @param labelName
-	 * @param correctedLabel
-	 * @param cellID
-	 * @param rssi
-	 * @param scannedCells
-	 */
-	public void buildLogFile(String timestamp, String labelName, String correctedLabel, String cellID, int rssi, ArrayList<ScannedCell> scannedCells) {
+	public void addToBuffer(String timestamp, String labelName, String correctedLabel, String cellID, int rssi, ArrayList<ScannedCell> scannedCells) {
 		StringBuilder sb = new StringBuilder();
 		if (correctedLabel == null) {
-			sb.append(timestamp + ":" + labelName + ":" + cellID + "," + rssi);
+			sb.append(timestamp + ":" + labelName + ":" + timeStampToDate(timestamp) + ":" + cellID + "," + rssi);
 		} else {
-			sb.append(timestamp + ":" + labelName + ":" + correctedLabel + ":" + cellID + "," + rssi);
+			sb.append(timestamp + ":" + labelName + ":" + correctedLabel + ":" + timeStampToDate(timestamp) + ":" + cellID + "," + rssi);
 		}
 		
 		if (scannedCells != null) {
@@ -101,12 +95,60 @@ public class FileManager {
 		
 		sb.append("\n");
 		String logData = sb.toString();
+		buffer.add(logData);
+	}
+	
+	/**
+	 * Creating LogFile entry
+	 * Format: timestamp:detectedLocation:correctedLocation:currentCellID,currentCellRSSI:neighbourCellID,neighbourRSSI:neighbourCellID,neighbourRSSI: ...
+	 * 
+	 * Set correctedLocation NULL if saving data from ScanFragment. CorrectedLocation only used during validation
+	 * @param timestamp
+	 * @param labelName
+	 * @param correctedLabel
+	 * @param cellID
+	 * @param rssi
+	 * @param scannedCells
+	 */
+	public void buildLogFile(String timestamp, String labelName, String correctedLabel, String cellID, int rssi, ArrayList<ScannedCell> scannedCells) {
+		StringBuilder sb = new StringBuilder();
+		if (correctedLabel == null) {
+			sb.append(timestamp + ":" + labelName + ":" + timeStampToDate(timestamp) + ":" + cellID + "," + rssi);
+		} else {
+			sb.append(timestamp + ":" + labelName + ":" + correctedLabel + ":" + timeStampToDate(timestamp) + ":" + cellID + "," + rssi);
+		}
+		
+		if (scannedCells != null) {
+			sb.append(":");
+			
+			for (int i = 0; i < scannedCells.size(); i++) {
+				String suffix = "";
+				if (i < scannedCells.size() - 1) {
+					suffix = ":";
+				} else {
+					suffix = "";
+				}
+				sb.append(scannedCells.get(i).getCellID() + "," + scannedCells.get(i).getRSSI() + suffix);	
+			}
+		}
+		
+		sb.append("\n");
+		String logData = sb.toString();
+
 		try {
 			bw.write(logData);
 		} catch (IOException e) {
 			e.printStackTrace();
 			showInfoMessage("Error while writing new line to logfile", Toast.LENGTH_LONG);
 		}
+	}
+	
+	@SuppressLint("SimpleDateFormat")
+	private String timeStampToDate(String timestamp) {
+		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+		Date date = new Date();
+		
+		return dateFormat.format(date);
 	}
 	
 	private void showInfoMessage(String message, int time) {

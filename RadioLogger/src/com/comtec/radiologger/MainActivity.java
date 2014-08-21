@@ -18,6 +18,7 @@ import android.os.Build.VERSION_CODES;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.IBinder;
+import android.os.PowerManager;
 import android.os.RemoteException;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.view.ViewPager;
@@ -126,9 +127,16 @@ public class MainActivity extends Activity implements ActivityCommunicationInter
 	private IBinaryOp opService;
 	private String pluginWarning = "";
 	
+	PowerManager mgr;
+	PowerManager.WakeLock wakeLock;
+	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		
+		mgr = (PowerManager)this.getSystemService(Context.POWER_SERVICE);
+		wakeLock = mgr.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "MyWakeLock");
+		
 		setContentView(R.layout.activity_main);
 
 		// Display always stays on
@@ -327,6 +335,8 @@ public class MainActivity extends Activity implements ActivityCommunicationInter
 	}
 	
 	private void startScanning() {
+		wakeLock.acquire();
+		
 		showNotification();
 		if (mCellScanManager != null) {
 			mCellScanManager.startCellScan(refreshTime, labelName);
@@ -343,6 +353,7 @@ public class MainActivity extends Activity implements ActivityCommunicationInter
 	 */
 	private void stopScanning() {
 		Log.d("MainActivity", "StopScanning");
+		wakeLock.release();
 		sendToFragments(MessageTypes.STOP_SCAN, "");
 		if (isScanning) {
 			if (!labelName.equals(default_location) && !configFile.equals(default_configfile)) {

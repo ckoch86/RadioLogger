@@ -22,18 +22,26 @@
         android:icon="@drawable/ic_launcher"
         android:label="@string/app_name"
         android:theme="@style/AppTheme" >
-        <service android:name="com.comtec.radiologger.services.CellScanService" >
+        <service
+            android:name="com.comtec.radiologger.services.CellScanService"
+            android:process="@string/process_name" >
         </service>
 
-        <activity android:name="com.comtec.radiologger.ChooseConfigActivity" >
+        <activity
+            android:name="com.comtec.radiologger.ChooseConfigActivity"
+            android:screenOrientation="portrait" >
         </activity>
 
         <service android:name="com.comtec.radiologger.services.NetStatInfoService" >
         </service>
 
-        <activity android:name="com.comtec.radiologger.ChoosePluginActivity" >
+        <activity
+            android:name="com.comtec.radiologger.ChoosePluginActivity"
+            android:screenOrientation="portrait" >
         </activity>
-        <activity android:name="com.comtec.radiologger.MainActivity" >
+        <activity
+            android:name="com.comtec.radiologger.MainActivity"
+            android:screenOrientation="portrait" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

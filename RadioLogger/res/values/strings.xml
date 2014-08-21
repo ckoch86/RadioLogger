@@ -40,5 +40,6 @@
     <string name="txt_not_assigned">notAssigned</string>
     <string name="txt_selected_plugin">Plugin:</string>
     <string name="txt_no_plugin_selected">No plugin selected</string>
+    <string name="process_name">:cellscanprocess</string>
 
 </resources>

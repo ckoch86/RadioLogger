@@ -1,10 +1,15 @@
 package com.comtec.radiologger.services;
 
+import java.security.Timestamp;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.TimeZone;
 
 import com.comtec.radiologger.model.ScanManager;
 
+import android.annotation.SuppressLint;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
@@ -19,6 +24,7 @@ import android.telephony.PhoneStateListener;
 import android.telephony.SignalStrength;
 import android.telephony.TelephonyManager;
 import android.telephony.gsm.GsmCellLocation;
+import android.text.format.DateFormat;
 import android.util.Log;
 
 public class CellScanService extends Service {
@@ -90,6 +96,8 @@ public class CellScanService extends Service {
 	/**
 	 * Building logfile timestemp : NeighbourCellID : NeighbourRSSI -
 	 */
+	
+	private static int count = 1;
 	private static Runnable runnable = new Runnable() {
 
 		public void run() {
@@ -102,11 +110,17 @@ public class CellScanService extends Service {
 			networkinfo.putString("operator", telManager.getNetworkOperatorName());
 			networkinfo.putString("networktype", networkType);
 			networkinfo.putInt("rssi", myPhoneStateListener.getRSSI());
-					
+
 			sendToCellScanner(networkinfo, ScanManager.NETWORKINFO);
 			
 			Bundle b = new Bundle();
-			b.putString("timestamp", String.valueOf(System.currentTimeMillis()));
+			
+			long timestamp = System.currentTimeMillis();
+			
+//			showTimestamp(count);
+//			count++;
+			
+			b.putString("timestamp", String.valueOf(timestamp));
 			
 			String neighboursList = "";		
 			if (neighbours != null) {
@@ -129,6 +143,13 @@ public class CellScanService extends Service {
 			b.putString("neighbours", neighboursList);
 			sendToCellScanner(b, ScanManager.SCANNED_NEIGHBOURS);
 			handler.postDelayed(this, refreshTime);
+		}
+		
+		private void showTimestamp(int count) {
+			SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+			Date date = new Date();
+			
+			Log.d("CellScanSerice", count + " " + dateFormat.format(date));
 		}
 	};
 
